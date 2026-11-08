@@ -1,1 +1,183 @@
 
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سر العبقري - Genius Mystery</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;
+ font-family:Arial,sans-serif;
+ background:linear-gradient(145deg,#100d30,#30205d,#111b40);
+ color:white;text-align:center;padding:20px
+}
+.container{max-width:520px;margin:auto}
+h1{color:#ffd76a;font-size:32px}
+.subtitle{color:#d5c9ff}
+.panel{
+ background:#ffffff15;border:1px solid #ffffff35;
+ border-radius:20px;padding:20px;margin:15px 0
+}
+.stats{display:flex;justify-content:space-around;gap:8px}
+.stat{background:#ffffff18;padding:12px;border-radius:12px}
+button{
+ border:0;border-radius:12px;padding:13px 18px;
+ margin:5px;background:#f7c95b;color:#251641;
+ font-weight:bold;font-size:16px;cursor:pointer
+}
+button.secondary{background:#b8a3ff}
+input{
+ width:90%;padding:14px;border-radius:12px;
+ border:0;font-size:17px;text-align:center;margin:12px
+}
+#question{font-size:21px;line-height:1.7}
+#message{min-height:28px;color:#ffe18b}
+.small{font-size:13px;color:#d6d0e9}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔮 سرّ العبقري</h1>
+<p class="subtitle">GENIUS MYSTERY</p>
+
+<div class="panel">
+<button onclick="setLang('ar')">العربية</button>
+<button class="secondary" onclick="setLang('en')">English</button>
+</div>
+
+<div class="panel stats">
+<div class="stat">⭐ <span id="score">0</span></div>
+<div class="stat">🪙 <span id="coins">20</span></div>
+<div class="stat">🏆 <span id="level">1</span>/10</div>
+</div>
+
+<div class="panel">
+<h2 id="stage">المرحلة الأولى</h2>
+<p id="question"></p>
+<input id="answer" placeholder="اكتب إجابتك هنا">
+<br>
+<button onclick="checkAnswer()" id="check">تحقق من الإجابة</button>
+<button class="secondary" onclick="hint()" id="hint">💡 تلميح (5 عملات)</button>
+<p id="message"></p>
+<p id="hintText"></p>
+<button onclick="nextLevel()" id="next" hidden>المرحلة التالية ➜</button>
+</div>
+
+<div class="panel">
+<button onclick="dailyReward()" id="daily">🎁 المكافأة اليومية</button>
+<p class="small">حل الألغاز واجمع العملات وافتح أسرار العالم السحري!</p>
+<button class="secondary" onclick="restart()">إعادة اللعبة</button>
+</div>
+</div>
+
+<script>
+const puzzles=[
+{q:"ما الشيء الذي كلما أخذت منه كبر؟",a:["الحفرة"],h:"تجده في الأرض"},
+{q:"له أسنان ولا يعض، ما هو؟",a:["المشط"],h:"نستخدمه لترتيب الشعر"},
+{q:"ما الشيء الذي يكتب ولا يقرأ؟",a:["القلم"],h:"تستخدمه في المدرسة"},
+{q:"ما الشيء الذي له عين واحدة ولا يرى؟",a:["الإبرة"],h:"تستخدم في الخياطة"},
+{q:"ما الشيء الذي يمشي بلا أرجل؟",a:["الوقت"],h:"لا تستطيع إيقافه"},
+{q:"ما الشيء الذي كلما زاد نقص؟",a:["العمر"],h:"يمر مع مرور الأيام"},
+{q:"بيت بلا أبواب ولا نوافذ، ما هو؟",a:["البيضة"],h:"يخرج منه الكتكوت"},
+{q:"ما الشيء الذي يسمع بلا أذن ويتكلم بلا لسان؟",a:["الصدى"],h:"يردد صوتك"},
+{q:"ما الشيء الذي يوجد في القرن مرة وفي الدقيقة مرتين ولا يوجد في الساعة؟",a:["القاف","حرف القاف"],h:"إنه حرف من الحروف العربية"},
+{q:"ما الشيء الذي له أوراق وليس نباتًا؟",a:["الكتاب"],h:"نقرأه ونتعلم منه"}
+];
+
+const english=[
+{q:"What gets bigger the more you take away?",a:["hole"],h:"You find it in the ground"},
+{q:"What has teeth but cannot bite?",a:["comb"],h:"Used to arrange hair"},
+{q:"What writes but cannot read?",a:["pen"],h:"Used at school"},
+{q:"What has one eye but cannot see?",a:["needle"],h:"Used for sewing"},
+{q:"What flies without wings?",a:["time"],h:"You cannot stop it"},
+{q:"What gets shorter as it grows older?",a:["life","age"],h:"It passes every day"},
+{q:"A house with no doors or windows. What is it?",a:["egg"],h:"A chick comes out of it"},
+{q:"What repeats your words without a mouth?",a:["echo"],h:"You hear it in mountains"},
+{q:"What letter appears once in a minute and twice in a moment?",a:["m"],h:"The first letter of moment"},
+{q:"What has pages but is not a tree?",a:["book"],h:"You read it"}
+];
+
+let current=Number(localStorage.getItem("level")||0);
+let score=Number(localStorage.getItem("score")||0);
+let coins=Number(localStorage.getItem("coins")||20);
+let lang="ar",solved=false;
+
+function save(){
+localStorage.setItem("level",current);
+localStorage.setItem("score",score);
+localStorage.setItem("coins",coins);
+}
+function render(){
+let p=(lang==="ar"?puzzles:english)[current];
+document.getElementById("score").textContent=score;
+document.getElementById("coins").textContent=coins;
+document.getElementById("level").textContent=current+1;
+document.getElementById("stage").textContent=lang==="ar"?"المرحلة "+(current+1):"Level "+(current+1);
+document.getElementById("question").textContent=p.q;
+document.getElementById("answer").value="";
+document.getElementById("message").textContent="";
+document.getElementById("hintText").textContent="";
+document.getElementById("next").hidden=true;
+document.getElementById("answer").disabled=false;
+solved=false;
+}
+function checkAnswer(){
+if(solved)return;
+let answer=document.getElementById("answer").value.trim().toLowerCase();
+let p=(lang==="ar"?puzzles:english)[current];
+if(p.a.includes(answer)){
+score+=10;coins+=5;solved=true;save();
+document.getElementById("message").textContent=lang==="ar"?"🎉 إجابة صحيحة! ربحت 10 نقاط و5 عملات":"🎉 Correct! You won 10 points and 5 coins!";
+document.getElementById("next").hidden=false;
+document.getElementById("answer").disabled=true;
+}else{
+document.getElementById("message").textContent=lang==="ar"?"❌ حاول مرة أخرى!":"❌ Try again!";
+}
+document.getElementById("score").textContent=score;
+document.getElementById("coins").textContent=coins;
+}
+function hint(){
+if(coins<5){
+document.getElementById("message").textContent=lang==="ar"?"عملاتك لا تكفي!":"Not enough coins!";
+return;
+}
+coins-=5;save();
+document.getElementById("coins").textContent=coins;
+document.getElementById("hintText").textContent=(lang==="ar"?"💡 ":"💡 ")+(lang==="ar"?puzzles:english)[current].h;
+}
+function nextLevel(){
+if(current<9){current++;save();render();}
+else{
+document.getElementById("question").textContent=lang==="ar"?"🏆 مبروك! أكملت جميع الألغاز!":"🏆 Congratulations! You solved all puzzles!";
+document.getElementById("next").hidden=true;
+}
+}
+function setLang(l){
+lang=l;
+document.documentElement.dir=l==="ar"?"rtl":"ltr";
+render();
+}
+function dailyReward(){
+let today=new Date().toDateString();
+if(localStorage.getItem("daily")==today){
+document.getElementById("message").textContent=lang==="ar"?"لقد حصلت على مكافأتك اليوم!":"You already claimed today's reward!";
+return;
+}
+coins+=10;
+localStorage.setItem("daily",today);
+save();
+document.getElementById("coins").textContent=coins;
+document.getElementById("message").textContent=lang==="ar"?"🎁 حصلت على 10 عملات!":"🎁 You won 10 coins!";
+}
+function restart(){
+if(confirm(lang==="ar"?"هل تريد إعادة اللعبة من البداية؟":"Restart the game?")){
+current=0;score=0;coins=20;save();render();
+}
+}
+render();
+</script>
+</body>
+</html>
